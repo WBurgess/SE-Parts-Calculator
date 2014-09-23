@@ -1,0 +1,71 @@
+<Window
+        xmlns="http://schemas.microsoft.com/netfx/2007/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:SECalculator"
+        x:Class="SECalculator.MainWindow"
+        Title="SE Parts Calculator" Height="500" Width="750" ResizeMode="NoResize" WindowStartupLocation="CenterScreen">
+    <Grid ShowGridLines="False">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3.5*"/>
+            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="2.5*"/>
+        </Grid.ColumnDefinitions>
+        <Image x:Name="Title" Grid.ColumnSpan="2" HorizontalAlignment="Left" Height="52" 
+			VerticalAlignment="Top" Width="488" Source="D:\Work\SECalculator\SECalculator\Assets\title01_Final.png"/>
+        <Label VerticalAlignment="Top" Margin="10,52,5,0" Background="AliceBlue"
+			Content="Parts default to Large Ship component values       Small?   Station?" Height="29" FontSize="10" />
+        <ScrollViewer HorizontalAlignment="Left" Height="380" Margin="10,81,0,0" VerticalAlignment="Top" Width="311">
+            <Grid x:Name="PartsList" HorizontalAlignment="Left" VerticalAlignment="Top" Height="1066"  Width="294" 
+				Background="AliceBlue" ShowGridLines="True" >
+                <!--93 parts, Oh my!-->
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="30"/>
+                    <ColumnDefinition Width="5*"/>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="30"/>
+                </Grid.RowDefinitions>
+                <Image HorizontalAlignment="Center" VerticalAlignment="Center" Height="30" Width="30" Grid.Row="0" Grid.Column="0"
+					Source="D:\Work\SECalculator\SECalculator\Assets\Icon_Block_Antenna.png"/>
+                <Button x:Name="PartsButton_Antenna" Grid.Column="1" Margin="3,3" Grid.Row="0" Click="PartsButtonHandler" Content="Antenna"/>
+                <CheckBox x:Name="CheckBox_Antenna_Station" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="3,3" Grid.Row="0" Grid.Column="3"/>
+                <CheckBox x:Name="CheckBox_Antenna_Small" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="3,3" Grid.Row="0" Grid.Column="2"/>
+                <Image HorizontalAlignment="Center" VerticalAlignment="Center" Height="30" Width="30" Grid.Row="1" Grid.Column="0"
+					Source="D:\Work\SECalculator\SECalculator\Assets\Icon_Block_Artificial_Mass.png" Margin="0,0,0,1"/>
+                <Button x:Name="PartsButton_ArtificialMass" Grid.Column="1" Margin="3,3" Grid.Row="1" Click="PartsButtonHandler" Content="Artificial Mass"/>
+                <CheckBox HorizontalAlignment="Center" VerticalAlignment="Center" Margin="3,3" Grid.Row="1" Grid.Column="3"/>
+                <CheckBox HorizontalAlignment="Center" VerticalAlignment="Center" Margin="3,3" Grid.Row="1" Grid.Column="2"/>
+            </Grid>
+        </ScrollViewer>
+        <Label Content="Part                        Total" Grid.Column="1" HorizontalAlignment="Left" Margin="5,52,0,0" VerticalAlignment="Top" Width="175" Height="29" Background="#FFFFFCE5"/>
+        <Label Content="Component                                  Total" Grid.Column="2" HorizontalAlignment="Left" Margin="5,52,0,0" VerticalAlignment="Top" Width="217" Height="29" Background="#FFE2FFDF"/>
+        <Grid x:Name="ComponentListGrid" Margin="5,80,10,10" Background="#FFE2FFDF" Grid.Column="2" ShowGridLines="True">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="4*"/>
+                <ColumnDefinition Width="1*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <!-- Added Programatically-->
+            </Grid.RowDefinitions>
+        </Grid>
+        <ScrollViewer x:Name="ShoppingListViewer" Grid.Column="1" HorizontalAlignment="Left" Height="381" Margin="5,80,0,0" VerticalAlignment="Top" Width="175" Background="#FFFFFCE5">
+            <Grid x:Name="ShoppingList" ShowGridLines="True" Height="565" Width="158">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="105"/>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+            </Grid>
+        </ScrollViewer>
+
+    </Grid>
+</Window>
