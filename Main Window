@@ -1,0 +1,626 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+using System.Collections.ObjectModel;
+
+namespace SECalculator
+{
+    public class Part
+    {
+        private int totalComponents;
+        private string partName;
+        private List<string> componentNames = new List<string>();
+        private List<int> componentValues = new List<int>();
+
+        /// Constructor for a Part. Part Components and their values are matched up by spots in each
+        /// respective array. componentNames[0]'s values are in componentValues[0]
+        public Part(string _partName, string[] _compNames, int[] _compValues)
+        {
+            this.totalComponents = _compNames.Length;
+            this.partName = _partName;
+
+            for (int i = 0; i < totalComponents; i++)
+            {
+               this.componentNames.Add(_compNames[i]);
+               this.componentValues.Add(_compValues[i]);
+            }
+        }
+
+        public string PartName
+        {
+            get { return partName; }
+            set { partName = value; }
+        }
+
+        public List<string> ComponentNames
+        {
+            get { return componentNames; }
+        }
+
+        public List<int> ComponentValues
+        {
+            get { return componentValues; }
+        }
+
+    }
+
+    
+    /// <summary> Naming Conventions for XAML objects
+    /// PartsList buttons:
+    ///     PartsList_PartName
+    ///     EG - "PartsList_Antenna"
+    ///     
+    /// PartsList checkboxes:
+    ///     CheckBox_PartName_Small
+    ///     CheckBox_PartName_Station
+    ///     EG - "CheckBox_Antenna_Small"
+    ///     
+    /// 
+    public partial class MainWindow : Window
+    {
+        // ShoppingList Stuff
+        // Global height of ShoppingList rows
+        GridLength shoppingListRowHeight = new GridLength(20);
+
+        // Array of part Names pulled from ShoppingList rows
+        String[] shoppingListNameArray = new string[93];
+        int shoppingListIterator = 0;
+
+        // Strings for Small and Station checkboxes
+        String isSmallConcat = " - Small";
+        String isStationConcat = " - Station";
+
+        // Control for naming the rows in the ShoppingList
+        int shoppingListRowIterator = 0;
+
+        // ComponentList Stuff
+        GridLength componentListRowHeight = new GridLength(20);
+        int componentNameBlockHeight = 15;
+        int componentValueBlockWidth = 25;
+        int componentValueBlockHeight = 15;
+
+        // List of ALL parts ever!
+        List<Part> ComponentDataList = new List<Part>();
+
+        // List of all strings currently active in ComponentListGrid (column0)
+        List<string> activeComponentNames = new List<string>();
+        int activeComponentNameIterator = 0;
+
+        // List of all values currently active in ComponentListGrid (column1)
+        List<int> activeComponentValues = new List<int>();
+        int activeComponentValueIterator = 0;
+
+#region RAW COMPONENT DATA---------------------------------------------------
+        // Antenna
+        static string antennaName = "Antenna";
+        static string[] antennaComponentNames = new string[6] {"Radio-communication Components", "Computer", "Large Steel Tube", 
+                                                        "Small Steel Tube", "Construction Component", "Steel Plate" };
+        static int[] antennaValues = new int[6] { 40, 8, 40, 60, 30, 80 };
+        Part antenna = new Part(antennaName, antennaComponentNames, antennaValues);
+
+        // Antenna - Small
+        string antennaName_Small = "Antenna - Small";
+        string[] antennaComponentNames_Small = new string[3] { "Computer", "Small Steel Tube", "Construction Component" };
+        int[] antennaValues_Small = new int[3] { 1, 1, 1 };
+
+        // Artificial Mass
+        static string artificialMassName = "Artificial Mass";
+        static string[] artificialMassComponentNames = new string[4] {"Computer", "Construction Component", 
+                                                                     "Gravity Generator Components", "Steel Plate" };
+        static int[] artificialMassValues = new int[4] {20, 30, 3, 90};
+        Part artificialMass = new Part(artificialMassName, artificialMassComponentNames, artificialMassValues);
+
+        // Artificial Mass - Small
+        string artificialMassName_Small = "Artificial Mass - Small";
+#endregion
+
+        public MainWindow()
+        {
+            InitializeComponent();
+
+            // Populate the giant list of Parts
+            ComponentDataList.Add(antenna);
+            ComponentDataList.Add(artificialMass);
+        }
+
+        void PartsButtonHandler (object sender, RoutedEventArgs e)
+        {
+            // Get the part's name from the button! yeah!
+            string partName = (sender as Button).Content.ToString();
+            bool nameFound = false;
+
+            // Get row for button clicked; columns don't change :)
+            int rowNumber = Grid.GetRow(sender as UIElement);
+            int columnSmall = 2;
+            int columnStation = 3;
+
+#region ShoppingList Populatorinator
+            // Flags for string concats in shoppingList
+            bool isSmall = false;
+            bool isStation = false;
+
+            // Scan each cell in grid and find SMALL checkbox in same row as button
+            foreach (UIElement cell in PartsList.Children)
+            {
+                if (Grid.GetColumn(cell) == columnSmall && Grid.GetRow(cell) == rowNumber)
+                {
+                    if ((cell as CheckBox).IsChecked == true)
+                    {
+                        isSmall = true;
+                    }
+                }
+            }
+
+            // One mo' gain for the STATION checkbox in same row as button
+            foreach (UIElement cell in PartsList.Children)
+            {
+                if (Grid.GetColumn(cell) == columnStation && Grid.GetRow(cell) == rowNumber)
+                {
+                    if ((cell as CheckBox).IsChecked == true)
+                    {
+                        isStation = true;
+                    }
+                }
+            }
+           
+            // If no rows with content matching an entry in the ShoppingListName array? Add one!
+            // TODO: Make it so ALL versions of same part (default, -Small, -Station) can be in the ShoppingList
+            for (int i = 0; i < shoppingListNameArray.Length; i++)
+            {
+                if (shoppingListNameArray[i] == partName ||
+                    shoppingListNameArray[i] == (partName + isSmallConcat) ||
+                    shoppingListNameArray[i] == (partName + isStationConcat))
+                {
+                    nameFound = true;
+                }
+            }
+
+            if (nameFound == false)
+                AddRow(ShoppingList, partName, isSmall, isStation);
+
+            // TODO: else find the row in ShoppingList with Button's name, AddPart()
+
+#endregion      
+
+#region ComponentList Populator
+            // Reference holders for got Lists 
+            List<string> newComponentNames = new List<string>();
+            List<int> newComponentValues = new List<int>();
+
+            // Get Part info from giant list of Parts by comparing string from partName to <Part>.PartNames in the list
+            for (int i = 0; i < ComponentDataList.Count; i++)
+            {
+                if (partName == ComponentDataList[i].PartName)
+                {
+                    newComponentNames = ComponentDataList[i].ComponentNames;
+                    newComponentValues = ComponentDataList[i].ComponentValues;
+
+                    Console.WriteLine("Match:" + partName + " & " + ComponentDataList[i].PartName);
+                    for (int j = 0; j < newComponentNames.Count; j++)
+                    {
+                        Console.WriteLine(newComponentNames[j] + " " + newComponentValues[j]);
+                    }
+                    // When part is found, quit looping through ComponentDataList
+                    break;
+                }
+            }
+
+            // EDGE CASE: If this is the first set of Components being added, do not check for repeats.
+            //  Build TextBlocks regularly
+            bool isFirstPart = false;
+
+            if (activeComponentNames.Count == 0)
+            {
+                Console.WriteLine("First Part being Added: " + isFirstPart);
+                isFirstPart = true;
+                for (int i = 0; i < newComponentNames.Count; i++)
+                {
+                    AddRow(ComponentListGrid, newComponentNames[i], false, false, newComponentValues[i]);
+
+                    // Add new ComponentNames & ComponentValues to activeLists
+                    // TODO: Make sure these are removed (along with their values) upon DeleteButton click Event
+                    activeComponentNames.Add(newComponentNames[i]);
+                    activeComponentValues.Add(newComponentValues[i]);
+                }
+            }
+
+            // Now that we have the Part.Lists info, clean them for repeats before adding any textblocks. 
+            // Repeat checking gated by isFirstPart.
+            if (isFirstPart == false)
+            {
+                int repeatCounter = 0;
+                for (int i = 0; i < newComponentNames.Count; i++)
+                {
+                    repeatCounter = 0; // Reset the counter every iteration
+
+                    for (int j = 0; j < activeComponentNames.Count; j++)
+                    {
+                        if (newComponentNames[i] != activeComponentNames[j])
+                        {
+                            repeatCounter++;
+
+                            // If no repeats, add NEW textblocks to the UIElement
+                            if (repeatCounter == activeComponentNames.Count)
+                            {
+                                AddRow(ComponentListGrid, newComponentNames[i], false, false, newComponentValues[i]);
+
+                                // Add new ComponentNames to masterList. Also increment iterator (j++) so this new row is skipped in repeat check
+                                // TODO: Make sure these are removed (along with their values) upon DeleteButton click Event
+                                activeComponentNames.Add(newComponentNames[i]);
+                                activeComponentValues.Add(newComponentValues[i]);
+                                j++;
+                            }
+                        }
+                        // If there are repeats, get textBlock in ComponentList.column1 and add current value to it
+                        else if (newComponentNames[i] == activeComponentNames[j])
+                        {                            
+                            // Get the row of the repeated TextBlock string by searching activeComponentNames for current newName
+                            int row = activeComponentNames.IndexOf(newComponentNames[i]);
+
+                            ChangeTextBlockValue(ComponentListGrid, row, 1, newComponentValues[i]);
+                        }
+                    }
+                }
+            }           
+
+#endregion
+        }
+        
+        // Handler for the delButtons in ShoppingList
+        void DeleteButtonHandler (object sender, RoutedEventArgs e)
+        {
+            int row = Grid.GetRow((sender as Button));
+
+            // Set TextBox's value in same row to 0, then erase the ShoppingListRow.
+            // ComponentListRow might erase or not, depends on current values.
+            TextBlock partName = GetChildInCell(ShoppingList, row, 0) as TextBlock;
+            partName.Text = "0";
+          //if (ComponentList value rows need to be deleted)
+          //    foreach (row to be erased)
+          //        DeleteRow(ComponentListGrid, rowNumber);
+            DeleteRow(ShoppingList, row);
+        }
+
+        void TextChangedHandler(object sender, TextChangedEventArgs e)
+        {
+            Console.WriteLine("--- INSIDE TEXTCHANGED HANDLER WOOOO ---");
+
+            string input = (sender as TextBox).Text;
+            int result = 0;
+            bool validated = Int32.TryParse(input, out result);
+
+            // Ghetto input cleaning. The TryParse only removes the flag if an Int32 is input.
+            if (validated)
+            {
+                /// TODO: - Update values in ComponentListGrid
+                /// 1 - Get default value from Master parts list
+                /// 2 - Multiply the default value by result from TryParse
+                /// 3 - Set that as value for every component tied to the part in this TextBox's row
+                /// 
+
+
+                List<int> rowList = new List<int>();
+                List<int> valueList = new List<int>();
+
+                int defaultValue = 0;
+                int newInt = 0;
+                int multiplier = 0;
+                int currentValue = 0;
+
+                // Get partName string from column0 in same row as this.delButton
+                /* TextBlock partBlock = ComponentListGrid.Children.Cast<TextBlock>()
+                                            .First(z => Grid.GetRow(z) == row && Grid.GetColumn(z) == 0);*/
+                TextBlock partBlock = GetChildInCell(ComponentListGrid, row, 0) as TextBlock;
+
+                // Get list of rowNumbers of components of Part in ShoppingList that is in same row as this.delButton (BYAH)
+                rowList = GetActiveComponentRows(partBlock.Text);
+
+
+                // Get list of the values in those rows
+                //for (int i = 0; i < rowList.Count; i++)
+
+
+                // Get value to replace in ComponentListGrid
+                TextBlock valueBlock = ComponentListGrid.Children.Cast<TextBlock>()
+                                           .First(z => Grid.GetRow(z) == row && Grid.GetColumn(z) == 1);
+
+                TextBox textBox = ShoppingList.Children.Cast<TextBox>()
+                                           .First(z => Grid.GetRow(z) == row && Grid.GetColumn(z) == 1);
+
+                // Get default value of the component to be subtracted
+
+                try
+                {
+                    multiplier = Convert.ToInt32(textBox.Text);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Exception CAUGHT: " + ex);
+                    Console.WriteLine("Could not convert string into an Int32. Try cleaning the input.");
+                }
+
+                try
+                {
+                    currentValue = Convert.ToInt32(valueBlock.Text);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Exception CAUGHT: " + ex);
+                    Console.WriteLine("Could not convert string into an Int32. Try cleaning the input.");
+                }
+
+                newInt = defaultValue * multiplier;
+
+                if (newInt >= currentValue)
+                {
+                    DeleteRow(ComponentListGrid, row);
+                    DeleteRow(ShoppingList, row);
+                }
+                else
+                {
+                    foreach (int rowIndex in rowList)
+                    {
+                        ChangeTextBlockValue(ComponentListGrid, rowIndex, 1, newInt);
+                    }
+                }
+
+                /// if (valueToBeSubtracted == current TextBlock value)
+                ///     removeRow entirely;
+                /// else
+                ///     ChangeTextBlockValue(-negativeValue); to subtract
+                // TODO: Remove components and correct values from ComponentListGrid
+                // Remember to remove entries from ActiveComponent Lists if their value = 0!!!!!!
+
+                
+            }
+            else
+            {
+                (sender as TextBox).Text = " ";
+            }
+
+        }
+
+        public UIElement GetChildInCell(Grid gridControl, int row, int column)
+        { 
+            UIElement cellElement = new UIElement();
+
+            cellElement = gridControl.Children.Cast<UIElement>()
+                          .First(z => Grid.GetRow(z) == row && Grid.GetColumn(z) == column);
+
+            return cellElement;
+        }
+
+        // Run String compare to Parts master List and return List<int> of row values
+        public List<int> GetActiveComponentRows(string queryPartName)
+        {
+            // Get all componentNames for that part
+            // Search ActivePartNames for those components to get the row, return the componentValues in that row, column1
+            List<int> rowList = new List<int>();
+
+            // Get correct component names from Parts master list
+            for (int i = 0; i < ComponentDataList.Count; i++)
+            {
+                if (queryPartName == ComponentDataList[i].PartName)
+                {
+                    for (int j = 0; j < ComponentDataList[i].ComponentNames.Count; j++)
+                    {
+                        // Returns each row number for each component. WILL put -1 if no match, so parse accordingly.
+                        rowList.Add(activeComponentNames.IndexOf(ComponentDataList[i].ComponentNames[j]));
+                        Console.WriteLine(ComponentDataList[i].ComponentNames[j] + " added to rowList<> at " + rowList[j]);
+                    }
+                    break;
+                }
+            }
+
+            return rowList;
+        }
+
+        // Adds rows (no really?)
+        public void AddRow(Grid gridControl, String buttonName, bool smallFlag, bool stationFlag, int buttonValue = 0) // <-- Optional Parameter, MOST DOPE!
+        {
+            // Get the names of the Grid we're going to add a row to
+            String gridName = gridControl.Name;
+
+            // Define new row(s)
+            RowDefinition newRowDef = new RowDefinition();
+
+#region ShoppingList Handler
+            if (gridName == "ShoppingList")
+            {
+                // Add the new row, set it's height
+                gridControl.RowDefinitions.Add(newRowDef);
+                newRowDef.Height = shoppingListRowHeight;
+
+                /// Populate the new row accordingly:
+                /// -Add a TextBlock and format it
+                /// -Add a TextBox and format it
+                /// -Add a deleteButton and format that shit
+
+                TextBlock partName = new TextBlock();
+                partName.Text = buttonName;
+                partName.FontSize = 10;
+                partName.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
+                partName.VerticalAlignment = System.Windows.VerticalAlignment.Center;
+
+                // If the Small or Station modifiers were checked upon button press, concat the string
+                if (smallFlag)
+                    partName.Text = buttonName + isSmallConcat;
+                if (stationFlag)
+                    partName.Text = buttonName + isStationConcat;
+
+                TextBox partTotal = new TextBox();
+                partTotal.TextChanged += TextChangedHandler;
+                partTotal.Text = "1";
+                partTotal.FontSize = 10;
+                partTotal.HorizontalAlignment = System.Windows.HorizontalAlignment.Center;
+                partTotal.VerticalAlignment = System.Windows.VerticalAlignment.Center;
+
+                Button delButton = new Button();
+                delButton.AddHandler(Button.ClickEvent, new RoutedEventHandler(DeleteButtonHandler));
+                Image delButtonImage = new Image();
+                BitmapImage delImage = new BitmapImage
+                    (new Uri(@"D:\Work\SECalculator\SECalculator\Assets\round-error-warning-button-clip-art.jpg"));
+                delButtonImage.Source = delImage;
+                delButton.Content = delButtonImage;
+                delButton.Height = 15;
+                delButton.Width = 15;
+                delButton.HorizontalAlignment = System.Windows.HorizontalAlignment.Center;
+                delButton.VerticalAlignment = System.Windows.VerticalAlignment.Center;
+                delButton.BorderBrush = null;
+                delButton.Background = null;
+                // TODO: ADD functionality to DeleteButton or create custom DeleteButton object/class
+
+                // Now add the things to the Grid
+                gridControl.Children.Add(partName);
+                Grid.SetRow(partName, shoppingListIterator);
+                Grid.SetColumn(partName, 0);
+
+                gridControl.Children.Add(partTotal);
+                Grid.SetRow(partTotal, shoppingListIterator);
+                Grid.SetColumn(partTotal, 1);
+
+                gridControl.Children.Add(delButton);
+                Grid.SetRow(delButton, shoppingListIterator);
+                Grid.SetColumn(delButton, 2);
+
+                // Add Row's Content to shoppingListNameArray, increment the iterator
+                if (smallFlag == false && stationFlag == false)
+                {
+                    shoppingListNameArray[shoppingListIterator] = buttonName;
+                    shoppingListIterator++;
+                }
+                else if (smallFlag == true && stationFlag == false)
+                {
+                    shoppingListNameArray[shoppingListIterator] = (buttonName + isSmallConcat);
+                    shoppingListIterator++;
+                }
+                else if (smallFlag == false && stationFlag == true)
+                {
+                    shoppingListNameArray[shoppingListIterator] = (buttonName + isStationConcat);
+                    shoppingListIterator++;
+                }
+
+            }
+#endregion
+#region ComponentList Handler
+            if (gridName == "ComponentListGrid")
+            {
+                Console.WriteLine("Inside AddRow, componentList section. Adding: " + buttonName + " w/ Value " + buttonValue);
+                gridControl.RowDefinitions.Add(newRowDef);
+                newRowDef.Height = shoppingListRowHeight;
+
+                // Create new TextBlocks and format them
+                TextBlock name = new TextBlock();
+                name.Text = buttonName;
+                name.Height = componentNameBlockHeight;
+                name.FontSize = 10;
+                name.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
+                name.VerticalAlignment = System.Windows.VerticalAlignment.Center;
+                
+                TextBlock value = new TextBlock();
+                value.Text = buttonValue.ToString();
+                value.Height = componentValueBlockHeight;
+                value.Width = componentValueBlockWidth;
+                value.FontSize = 10;
+                value.HorizontalAlignment = System.Windows.HorizontalAlignment.Center;
+                value.VerticalAlignment = System.Windows.VerticalAlignment.Center;
+
+                // Add the new TextBlocks to the grid
+                gridControl.Children.Add(name);
+                Grid.SetRow(name, activeComponentNameIterator);
+                Grid.SetColumn(name, 0);
+
+                gridControl.Children.Add(value);
+                Grid.SetRow(value, activeComponentNameIterator);
+                Grid.SetColumn(value, 1);
+
+                // Increment the iterator that tracks number of rows in ComponentListGrid
+                activeComponentNameIterator++;
+            }
+#endregion
+        }
+
+        // Deletes Rows (yes really)
+        public void DeleteRow(Grid gridControl, int rowNumber)
+        {
+            /// Find the row from the source of the event (delButton, changing partsAmount to 0)
+            /// Delete the row and all of its content
+      
+            /// EDGE CASE: if there's only one row in the list, ArgumentOutOfRangeException will throw.
+            /// Using .Clear() instead of .RemoveAt() will prevent this. :)
+            if (gridControl == ShoppingList)
+            {
+                gridControl.Children.RemoveRange(rowNumber, 3);
+                if (gridControl.RowDefinitions.Count == 1)
+                {
+                    gridControl.RowDefinitions.Clear();
+                    gridControl.Children.Clear();
+                }
+                else
+                    gridControl.RowDefinitions.RemoveAt(rowNumber);
+
+                // Remove entry from ShoppingListName array so same part can be re-added after one has been deleted
+                shoppingListNameArray[rowNumber] = null;
+                shoppingListIterator--; 
+            }
+
+            if (gridControl == ComponentListGrid)
+            {
+                gridControl.Children.RemoveRange(rowNumber, 2);
+                if (gridControl.RowDefinitions.Count == 1)
+                {
+                    gridControl.RowDefinitions.Clear();
+                    gridControl.Children.Clear();
+                }
+                else
+                    gridControl.RowDefinitions.RemoveAt(rowNumber);
+            }
+            
+        }
+
+        // Gets a TextBlock child and changes its value
+        public void ChangeTextBlockValue(Grid gridControl, int row, int column, int newValue)
+        {
+            int currentValue = 0;
+
+            /// -Find each component through string compare shoppingList this.row v. Part master list
+            /// -possible to gate calls based on WHERE this was called from?
+            
+            /// Or maybe add a range of rows parameter, then loop all of the following logic for(i < rows)
+            /// OR just write a function that does string compare to Parts master list, and returns their rows. 
+            /// Then call ChangeTextBlockValue() for each member in that list
+            
+            // Get Textblock from row & column via LINQ
+            TextBlock valueBlock = GetChildInCell(ComponentListGrid, row, column) as TextBlock;
+
+            // Turn textblock's string into an int
+            try
+            {
+                currentValue = Convert.ToInt32(valueBlock.Text);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Exception CAUGHT: " + ex);
+                Console.WriteLine("Could not convert string into an Int32. Try cleaning the input.");
+            }
+
+            // Add new value to the converted Int, turn back into a string, and change the text in the TextBlock
+            valueBlock.Text = (newValue + currentValue).ToString();
+
+            Console.WriteLine("Inside ChangeTextBlockValue. Changing " + valueBlock + "'s value of " + valueBlock.Text
+                    + " to " + (newValue + currentValue));
+        }
+
+    }
+}
